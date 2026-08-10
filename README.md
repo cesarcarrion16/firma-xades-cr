@@ -20,3 +20,12 @@ Route::get('/', function(){
   	return response($archivo, '200')->header('Content-Type', 'text/xml');
 });
 ```
+# Política FE 4.4
+
+Para namespaces de comprobantes electrónicos Costa Rica v4.4, el paquete usa
+la política XAdES-EPES del Anexo 2 oficial de Hacienda:
+
+- URI: `https://cdn.comprobanteselectronicos.go.cr/xml-schemas/Resoluci%C3%B3n_General_sobre_disposiciones_t%C3%A9cnicas_comprobantes_electr%C3%B3nicos_para_efectos_tributarios.pdf`
+- Digest: SHA-256, `DWxin1xWOeI8OuWQXazh4VjLWAaCLAA954em7DMh0h8=`
+
+Fuente: https://www.hacienda.go.cr/docs/ANEXOS_Y_ESTRUCTURAS_V4.4.pdf

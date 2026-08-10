@@ -66,6 +66,9 @@ class XMLSecurityDSig
     const EXC_C14N = 'http://www.w3.org/2001/10/xml-exc-c14n#';
     const EXC_C14N_COMMENTS = 'http://www.w3.org/2001/10/xml-exc-c14n#WithComments';
 
+    const POLICY_V44_URI = 'https://cdn.comprobanteselectronicos.go.cr/xml-schemas/Resoluci%C3%B3n_General_sobre_disposiciones_t%C3%A9cnicas_comprobantes_electr%C3%B3nicos_para_efectos_tributarios.pdf';
+    const POLICY_V44_DIGEST = 'DWxin1xWOeI8OuWQXazh4VjLWAaCLAA954em7DMh0h8=';
+
     const template = '<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="@"><ds:SignedInfo><ds:SignatureMethod /></ds:SignedInfo></ds:Signature>';
     const BASE_TEMPLATE = '<Signature xmlns="http://www.w3.org/2000/09/xmldsig#" Id="@"><SignedInfo><SignatureMethod /></SignedInfo></Signature>';
 
@@ -281,25 +284,46 @@ class XMLSecurityDSig
     }
 
     public function setSignPolicy(){
-        $xmlns = $this->xmlFirstChild->getAttribute('xmlns');
-        switch ($xmlns){
-            case (strpos($xmlns, 'v4.2') !== false):
-                $this->signPolicy = [
-                    "name" 		=> "",
-                    "url" 		=> "https://tribunet.hacienda.go.cr/docs/esquemas/2016/v4.2/ResolucionComprobantesElectronicosDGT-R-48-2016_4.2.pdf",
-                    "digest" 	=> "3gQCr0HYSdoxi0ZaRaJ4qs3mHfI=" // Base64_Encode(Hash_File(SHA_1))
-                ];
-                break;
-            case (strpos($xmlns, 'v4.3') !== false):
-                $this->signPolicy = [
-                    "name" 		=> "",
-                    "url" 		=> "https://www.hacienda.go.cr/ATV/ComprobanteElectronico/docs/esquemas/2016/v4.3/ResolucionComprobantesElectronicosDGT-R-48-2016_4.3.pdf",
-                    "digest" 	=> "3gQCr0HYSdoxi0ZaRaJ4qs3mHfI=" // Base64_Encode(Hash_File(SHA_1))
-                ];
-                break;
-            default:
-                throw new Exception("Cannot validate version: Unsupported Version");
+        $xmlns = $this->xmlFirstChild ? $this->xmlFirstChild->namespaceURI : null;
+        if (empty($xmlns) && $this->xmlFirstChild) {
+            $xmlns = $this->xmlFirstChild->getAttribute('xmlns');
         }
+
+        if (strpos($xmlns, '/v4.2/') !== false) {
+            $this->signPolicy = [
+                "name" => "",
+                "url" => "https://tribunet.hacienda.go.cr/docs/esquemas/2016/v4.2/ResolucionComprobantesElectronicosDGT-R-48-2016_4.2.pdf",
+                "digest" => "3gQCr0HYSdoxi0ZaRaJ4qs3mHfI=",
+                "digest_algorithm" => self::SHA1,
+            ];
+            return;
+        }
+
+        if (strpos($xmlns, '/v4.3/') !== false) {
+            $this->signPolicy = [
+                "name" => "",
+                "url" => "https://www.hacienda.go.cr/ATV/ComprobanteElectronico/docs/esquemas/2016/v4.3/ResolucionComprobantesElectronicosDGT-R-48-2016_4.3.pdf",
+                "digest" => "3gQCr0HYSdoxi0ZaRaJ4qs3mHfI=",
+                "digest_algorithm" => self::SHA1,
+            ];
+            return;
+        }
+
+        if (strpos($xmlns, '/v4.4/') !== false) {
+            $this->signPolicy = [
+                "name" => "",
+                "url" => self::POLICY_V44_URI,
+                "digest" => self::POLICY_V44_DIGEST,
+                "digest_algorithm" => self::SHA256,
+            ];
+            return;
+        }
+
+        throw new Exception("Cannot validate version: Unsupported Version");
+    }
+
+    public function getSignPolicy(){
+        return $this->signPolicy;
     }
 
     /**
@@ -1362,6 +1386,22 @@ class XMLSecurityDSig
         $issuerSerialNode->appendChild($X509IssuerNameNode);
         $X509SerialNumber = $this->createNewSignNode('X509SerialNumber', $certData['serialNumber']);
         $issuerSerialNode->appendChild($X509SerialNumber);
+        $this->appendSignaturePolicy($signedSignaturePropertiesNode);
+        $signedDataObjectPropertiesNode = $this->createNewXadesNode('SignedDataObjectProperties');
+        $signedPropertiesNode->appendChild($signedDataObjectPropertiesNode);
+        $dataObjectFormatNode = $this->createNewXadesNode('DataObjectFormat', null, [ "ObjectReference" => "#".$this->reference0Id ]);
+        $signedDataObjectPropertiesNode->appendChild($dataObjectFormatNode);
+        $mimeTypeNode = $this->createNewXadesNode('MimeType', 'text/xml');
+        $dataObjectFormatNode->appendChild($mimeTypeNode);
+        $encodingNode = $this->createNewXadesNode('Encoding', 'UTF-8');
+        $dataObjectFormatNode->appendChild($encodingNode);
+    }
+
+    private function appendSignaturePolicy($signedSignaturePropertiesNode){
+        if (empty($this->signPolicy['url']) || empty($this->signPolicy['digest']) || empty($this->signPolicy['digest_algorithm'])) {
+            throw new Exception('Cannot append SignaturePolicyIdentifier without a supported sign policy.');
+        }
+
         $signaturePolicyIdentifierNode = $this->createNewXadesNode('SignaturePolicyIdentifier');
         $signedSignaturePropertiesNode->appendChild($signaturePolicyIdentifierNode);
         $signaturePolicyIdNode = $this->createNewXadesNode('SignaturePolicyId');
@@ -1376,17 +1416,11 @@ class XMLSecurityDSig
         $signaturePolicyIdNode->appendChild($sigPolicyHashNode);
         $digestMethodNode = $this->createNewSignNode('DigestMethod');
         $sigPolicyHashNode->appendChild($digestMethodNode);
-        $digestMethodNode->setAttribute('Algorithm', $this::SHA1);
+        $digestMethodNode->setAttribute('Algorithm', $this->signPolicy['digest_algorithm']);
         $digestValueNode = $this->createNewSignNode('DigestValue', $this->signPolicy['digest']);
         $sigPolicyHashNode->appendChild($digestValueNode);
-        $signedDataObjectPropertiesNode = $this->createNewXadesNode('SignedDataObjectProperties');
-        $signedPropertiesNode->appendChild($signedDataObjectPropertiesNode);
-        $dataObjectFormatNode = $this->createNewXadesNode('DataObjectFormat', null, [ "ObjectReference" => "#".$this->reference0Id ]);
-        $signedDataObjectPropertiesNode->appendChild($dataObjectFormatNode);
-        $mimeTypeNode = $this->createNewXadesNode('MimeType', 'text/xml');
-        $dataObjectFormatNode->appendChild($mimeTypeNode);
-        $encodingNode = $this->createNewXadesNode('Encoding', 'UTF-8');
-        $dataObjectFormatNode->appendChild($encodingNode);
+
+        return $signaturePolicyIdentifierNode;
     }
 
     public function setKeyInfoId()
