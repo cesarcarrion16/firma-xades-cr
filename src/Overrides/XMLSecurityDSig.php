@@ -1402,17 +1402,17 @@ class XMLSecurityDSig
             throw new Exception('Cannot append SignaturePolicyIdentifier without a supported sign policy.');
         }
 
-        $signaturePolicyIdentifierNode = $this->createNewXadesNode('SignaturePolicyIdentifier');
+        $signaturePolicyIdentifierNode = $this->createNewXadesNodeNS('SignaturePolicyIdentifier');
         $signedSignaturePropertiesNode->appendChild($signaturePolicyIdentifierNode);
-        $signaturePolicyIdNode = $this->createNewXadesNode('SignaturePolicyId');
+        $signaturePolicyIdNode = $this->createNewXadesNodeNS('SignaturePolicyId');
         $signaturePolicyIdentifierNode->appendChild($signaturePolicyIdNode);
-        $sigPolicyIdNode = $this->createNewXadesNode('SigPolicyId');
+        $sigPolicyIdNode = $this->createNewXadesNodeNS('SigPolicyId');
         $signaturePolicyIdNode->appendChild($sigPolicyIdNode);
-        $identifierNode = $this->createNewXadesNode('Identifier', $this->signPolicy['url']);
+        $identifierNode = $this->createNewXadesNodeNS('Identifier', $this->signPolicy['url']);
         $sigPolicyIdNode->appendChild($identifierNode);
-        $descriptionNode = $this->createNewXadesNode('Description');
+        $descriptionNode = $this->createNewXadesNodeNS('Description');
         $sigPolicyIdNode->appendChild($descriptionNode);
-        $sigPolicyHashNode = $this->createNewXadesNode('SigPolicyHash');
+        $sigPolicyHashNode = $this->createNewXadesNodeNS('SigPolicyHash');
         $signaturePolicyIdNode->appendChild($sigPolicyHashNode);
         $digestMethodNode = $this->createNewSignNode('DigestMethod');
         $sigPolicyHashNode->appendChild($digestMethodNode);
