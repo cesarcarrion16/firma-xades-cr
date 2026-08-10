@@ -49,6 +49,9 @@ class Firmador implements FirmaXadesContract{
         $objKey = new XMLSecurityKey(XMLSecurityKey::RSA_SHA256, array('type' => 'private'));
         $objKey->loadKey($certInfo["privateKey"]);
 
+        // Establish the final namespace context before digesting references.
+        $objSec->appendSignatureToDocument($xml->documentElement);
+
         // Agregar la clave pública asociada a la firma.
         $objSec->add509Cert($certInfo["publicKey"], true);
         $objSec->appendKeyValue($certInfo);
@@ -68,9 +71,6 @@ class Firmador implements FirmaXadesContract{
 
         // Firma el archivo xml
         $objSec->sign($objKey);
-
-        // Adjuntar la firma al xml
-        $objSec->appendSignature($xml->documentElement);
 
         if ($output == self::TO_BASE64_STRING){
             // Devuelve el string del archivo xml firmado en formato Base64

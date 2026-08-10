@@ -1026,6 +1026,28 @@ class XMLSecurityDSig
     }
 
     /**
+     * Moves the in-progress Signature into its final document before references
+     * and SignedInfo are canonicalized. This keeps namespace context stable
+     * across serialization and a subsequent verification pass.
+     *
+     * @param DOMNode $parentNode
+     * @return DOMElement
+     */
+    public function appendSignatureToDocument($parentNode)
+    {
+        $this->resetXPathObj();
+        $signature = $this->appendSignature($parentNode);
+        if (! $signature instanceof DOMElement) {
+            throw new Exception('Unable to append Signature to XML document.');
+        }
+
+        $this->sigNode = $signature;
+        $this->resetXPathObj();
+
+        return $signature;
+    }
+
+    /**
      * @param string $cert
      * @param bool $isPEMFormat
      * @return string
