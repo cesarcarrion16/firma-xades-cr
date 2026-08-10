@@ -731,28 +731,10 @@ class XMLSecurityDSig
             }
             $refNode->setAttribute("URI", '#'.$uri);
 
-            $canonicalNode = new DOMDocument();
-            $tempNode = $canonicalNode->importNode($node, true);
-
-            $xmlns = $this->xmlFirstChild->getAttribute('xmlns');
-            if (!empty($xmlns)){
-                $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns",$xmlns);
-            }
-            $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:ds",self::XMLDSIGNS);
-            $xmlns_xsd = $this->xmlFirstChild->getAttribute('xmlns:xsd');
-            if (!empty($xmlns_xsd)){
-                $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xsd",self::XML_SCHEMA);
-            }
-            $xmlns_xsi = $this->xmlFirstChild->getAttribute('xmlns:xsi');
-            if (!empty($xmlns_xsi)){
-                $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xsi",self::XML_SCHEMA_INSTANCE);
-            }
-            if (is_array($namespaces)) {
-                foreach($namespaces as $n){
-                    $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/",$n['qualifiedName'],$n['value']);
-                }
-            }
-            $canonicalNode->appendChild($tempNode);
+            // Digest the node as it exists in the final invoice DOM. Cloning it
+            // and injecting namespace declarations changes inclusive C14N after
+            // saveXML()/loadXML(), leaving an unverifiable signature.
+            $canonicalNode = $node;
         } elseif ($force_uri) {
             $refNode->setAttribute("URI", '');
         }
