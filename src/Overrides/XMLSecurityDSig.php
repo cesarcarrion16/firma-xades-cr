@@ -1029,6 +1029,28 @@ class XMLSecurityDSig
         return $signature;
     }
 
+    /** Detach the final Signature while DigestValue values are calculated. */
+    public function detachSignatureFromDocument()
+    {
+        if ($this->sigNode instanceof DOMElement && $this->sigNode->parentNode !== null) {
+            $this->sigNode->parentNode->removeChild($this->sigNode);
+            $this->resetXPathObj();
+        }
+    }
+
+    /** Reattach the same Signature node; do not import or recreate it. */
+    public function reattachSignatureToDocument($parentNode)
+    {
+        if (! $this->sigNode instanceof DOMElement) {
+            throw new Exception('Unable to reattach Signature to XML document.');
+        }
+
+        $parentNode->appendChild($this->sigNode);
+        $this->resetXPathObj();
+
+        return $this->sigNode;
+    }
+
     /**
      * @param string $cert
      * @param bool $isPEMFormat

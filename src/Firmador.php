@@ -59,6 +59,10 @@ class Firmador implements FirmaXadesContract{
         // Insertar objeto Xades en la firma.
         $objSec->appendXades($certInfo);
 
+        // xmlseclibs validates references with Signature detached from the
+        // invoice. Calculate each digest in that exact final context.
+        $objSec->detachSignatureFromDocument();
+
         // Firmar utilizando SHA-256
         // Referencia del documento
         $objSec->addReference($xml,$objSec::SHA256, [ 'http://www.w3.org/2000/09/xmldsig#enveloped-signature' ], [ 'id_ref' => $objSec->reference0Id, 'force_uri' => true ]);
@@ -68,6 +72,9 @@ class Firmador implements FirmaXadesContract{
 
         // Referencia del nodo Xades
         $objSec->addReference($objSec->getXadesNode(),$objSec::SHA256,null, [ 'force_uri' => false, 'overwrite' => false, "type" => "http://uri.etsi.org/01903#SignedProperties" ], [ [ 'qualifiedName' => 'xmlns:xades', 'value' => $objSec::XADES ] ]);
+
+        // Reattach the same already-built node before canonicalizing SignedInfo.
+        $objSec->reattachSignatureToDocument($xml->documentElement);
 
         // Firma el archivo xml
         $objSec->sign($objKey);
