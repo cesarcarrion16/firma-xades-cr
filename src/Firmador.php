@@ -76,8 +76,18 @@ class Firmador implements FirmaXadesContract{
         // Reattach the same already-built node before canonicalizing SignedInfo.
         $objSec->reattachSignatureToDocument($xml->documentElement);
 
-        // Firma el archivo xml
-        $objSec->sign($objKey);
+        // Normalize the exact final DOM before canonicalizing SignedInfo. This
+        // makes RSA verification stable after saveXML() and a fresh loadXML().
+        $finalXml = $xml->saveXML();
+        $xml = new \DOMDocument();
+        if (! $xml->loadXML($finalXml)) {
+            throw new \RuntimeException('Unable to reload XML before signing.');
+        }
+
+        $finalSigner = new XMLSecurityDSig();
+        $finalSigner->locateSignature($xml);
+        $finalSigner->setCanonicalMethod($finalSigner::C14N);
+        $finalSigner->sign($objKey);
 
         if ($output == self::TO_BASE64_STRING){
             // Devuelve el string del archivo xml firmado en formato Base64
