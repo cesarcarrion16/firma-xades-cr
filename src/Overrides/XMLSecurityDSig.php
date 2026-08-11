@@ -409,6 +409,10 @@ class XMLSecurityDSig
      */
     public function calculateDigest($digestAlgorithm, $data, $encode = true)
     {
+        if (!is_string($data)) {
+            throw new Exception('Cannot calculate digest: reference data could not be canonicalized.');
+        }
+
         switch ($digestAlgorithm) {
             case self::SHA1:
                 $alg = 'sha1';
@@ -595,7 +599,14 @@ class XMLSecurityDSig
 
             $dataObject = $refNode->ownerDocument;
         }
+        if (!$dataObject instanceof DOMNode) {
+            throw new Exception('Reference URI must resolve to a local XML node.');
+        }
+
         $data = $this->processTransforms($refNode, $dataObject, $includeCommentNodes);
+        if (!is_string($data)) {
+            throw new Exception('Reference data could not be canonicalized.');
+        }
         if (!$this->validateDigest($refNode, $data)) {
             return false;
         }
