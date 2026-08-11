@@ -273,8 +273,11 @@ class XMLSecurityDSig
             $query = './'.$this->searchpfx.':SignedInfo';
             $nodeset = $xpath->query($query, $this->sigNode);
             if ($sinfo = $nodeset->item(0)) {
-                $query = './'.$this->searchpfx.'CanonicalizationMethod';
+                $query = './'.$this->searchpfx.':CanonicalizationMethod';
                 $nodeset = $xpath->query($query, $sinfo);
+                if ($nodeset->length > 1) {
+                    throw new Exception('Invalid Signature structure: more than one CanonicalizationMethod element found.');
+                }
                 if (! ($canonNode = $nodeset->item(0))) {
                     $canonNode = $this->createNewSignNode('CanonicalizationMethod');
                     $sinfo->insertBefore($canonNode, $sinfo->firstChild);
