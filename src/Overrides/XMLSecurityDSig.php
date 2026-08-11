@@ -924,28 +924,10 @@ class XMLSecurityDSig
                 $nodeset = $xpath->query($query, $sInfo);
                 $sMethod = $nodeset->item(0);
                 $sMethod->setAttribute('Algorithm', $objKey->type);
-                $canonicalNode = new DOMDocument();
-                $tempNode = $canonicalNode->importNode($sInfo, true);
-                $xmlns = $this->xmlFirstChild->getAttribute('xmlns');
-                if (!empty($xmlns)){
-                    $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns",$xmlns);
-                }
-                $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:ds",self::XMLDSIGNS);
-                $xmlns_xsd = $this->xmlFirstChild->getAttribute('xmlns:xsd');
-                if (!empty($xmlns_xsd)){
-                    $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xsd",self::XML_SCHEMA);
-                }
-                $xmlns_xsi = $this->xmlFirstChild->getAttribute('xmlns:xsi');
-                if (!empty($xmlns_xsi)){
-                    $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xsi",self::XML_SCHEMA_INSTANCE);
-                }
-                if (is_array($namespaces)) {
-                    foreach($namespaces as $n){
-                        $tempNode->setAttributeNS("http://www.w3.org/2000/xmlns/",$n['qualifiedName'],$n['value']);
-                    }
-                }
-                $canonicalNode->appendChild($tempNode);
-                $data = $this->canonicalizeData($canonicalNode, $this->canonicalMethod);
+                // Canonicalize SignedInfo exactly where it will be serialized.
+                // A cloned node with injected namespaces changes inclusive C14N
+                // and produces a SignatureValue that cannot be verified later.
+                $data = $this->canonicalizeData($sInfo, $this->canonicalMethod);
                 $sigValue = base64_encode($this->signData($objKey, $data));
                 $sigValueNode = $this->createNewSignNode('SignatureValue', $sigValue);
                 $sigValueNode->setAttribute('Id',$this->signatureValue);
