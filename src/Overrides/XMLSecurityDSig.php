@@ -6,6 +6,7 @@ use DOMElement;
 use DOMNode;
 use DOMXPath;
 use Exception;
+use RobRichards\XMLSecLibs\XMLSecurityKey;
 use RobRichards\XMLSecLibs\Utils\XPath as XPath;
 
 /**
