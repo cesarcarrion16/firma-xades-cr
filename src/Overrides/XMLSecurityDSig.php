@@ -666,12 +666,6 @@ class XMLSecurityDSig
      */
     public function validateReference()
     {
-        $docElem = $this->sigNode->ownerDocument->documentElement;
-        if (! $docElem->isSameNode($this->sigNode)) {
-            if ($this->sigNode->parentNode != null) {
-                $this->sigNode->parentNode->removeChild($this->sigNode);
-            }
-        }
         $xpath = $this->getXPathObj();
         $query = "./secdsig:SignedInfo/secdsig:Reference";
         $nodeset = $xpath->query($query, $this->sigNode);
@@ -683,7 +677,26 @@ class XMLSecurityDSig
         $this->validatedNodes = array();
 
         foreach ($nodeset AS $refNode) {
-            if (! $this->processRefNode($refNode)) {
+            $signatureParent = null;
+            $signatureNextSibling = null;
+            if ($refNode->getAttribute('URI') === '' && $this->sigNode->parentNode !== null) {
+                // The enveloped document reference must be canonicalized without
+                // ds:Signature. Internal #Id references, however, point into that
+                // signature (KeyInfo/XAdES) and must keep it attached.
+                $signatureParent = $this->sigNode->parentNode;
+                $signatureNextSibling = $this->sigNode->nextSibling;
+                $signatureParent->removeChild($this->sigNode);
+            }
+
+            try {
+                $referenceValid = $this->processRefNode($refNode);
+            } finally {
+                if ($signatureParent !== null) {
+                    $signatureParent->insertBefore($this->sigNode, $signatureNextSibling);
+                }
+            }
+
+            if (! $referenceValid) {
                 /* Clear the list of validated nodes. */
                 $this->validatedNodes = null;
                 throw new Exception("Reference validation failed");
